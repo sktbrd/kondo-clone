@@ -15,89 +15,128 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create directory structure
-        run: mkdir -p src/app/api/web/wallet src/components src/lib src/hooks src/types public/sounds
-
-      - name: Write package.json
+      - name: Create all files with Python
         run: |
-          cat > package.json << 'HEREDOC'
-          {
-            "name": "kondo-clone",
-            "version": "0.1.0",
-            "private": true,
-            "scripts": { "dev": "next dev", "build": "next build", "start": "next start" },
-            "dependencies": {
-              "next": "^15.3.0", "react": "^19.0.0", "react-dom": "^19.0.0",
-              "wagmi": "^2.15.0", "viem": "^2.30.0", "@wagmi/core": "^2.16.0",
-              "@coinbase/wallet-sdk": "^4.3.0", "@farcaster/frame-sdk": "^0.0.36",
-              "swr": "^2.3.3", "howler": "^2.2.4", "qs": "^6.14.0",
-              "@tanstack/react-query": "^5.75.0"
-            },
-            "devDependencies": {
-              "@types/node": "^22.0.0", "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0",
-              "@types/howler": "^2.2.12", "@types/qs": "^6.9.18",
-              "typescript": "^5.8.0", "tailwindcss": "^4.1.0",
-              "@tailwindcss/postcss": "^4.1.0", "postcss": "^8.5.0"
-            }
-          }
-          HEREDOC
+          python3 << 'PYEOF'
+          import os, json
 
-      - name: Write tsconfig.json
-        run: |
-          cat > tsconfig.json << 'HEREDOC'
-          {
-            "compilerOptions": {
-              "target": "ES2017", "lib": ["dom","dom.iterable","esnext"],
-              "allowJs": true, "skipLibCheck": true, "strict": true, "noEmit": true,
-              "esModuleInterop": true, "module": "esnext", "moduleResolution": "bundler",
-              "resolveJsonModule": true, "isolatedModules": true, "jsx": "preserve",
-              "incremental": true, "plugins": [{"name":"next"}], "paths": {"@/*":["./src/*"]}
-            },
-            "include": ["next-env.d.ts","**/*.ts","**/*.tsx",".next/types/**/*.ts"],
-            "exclude": ["node_modules"]
-          }
-          HEREDOC
+          def write(path, content):
+              os.makedirs(os.path.dirname(path) if os.path.dirname(path) else '.', exist_ok=True)
+              with open(path, 'w') as f:
+                  f.write(content)
+              print(f'Created {path}')
 
-      - name: Write next.config.ts
-        run: |
-          cat > next.config.ts << 'HEREDOC'
-          import type { NextConfig } from "next";
+          # package.json
+          write('package.json', json.dumps({
+              "name": "kondo-clone",
+              "version": "0.1.0",
+              "private": True,
+              "scripts": {"dev": "next dev", "build": "next build", "start": "next start"},
+              "dependencies": {
+                  "next": "^15.3.0",
+                  "react": "^19.0.0",
+                  "react-dom": "^19.0.0",
+                  "wagmi": "^2.15.0",
+                  "viem": "^2.30.0",
+                  "@wagmi/core": "^2.16.0",
+                  "@coinbase/wallet-sdk": "^4.3.0",
+                  "@farcaster/frame-sdk": "^0.0.36",
+                  "swr": "^2.3.3",
+                  "howler": "^2.2.4",
+                  "qs": "^6.14.0",
+                  "@tanstack/react-query": "^5.75.0"
+              },
+              "devDependencies": {
+                  "@types/node": "^22.0.0",
+                  "@types/react": "^19.0.0",
+                  "@types/react-dom": "^19.0.0",
+                  "@types/howler": "^2.2.12",
+                  "@types/qs": "^6.9.18",
+                  "typescript": "^5.8.0",
+                  "tailwindcss": "^4.1.0",
+                  "@tailwindcss/postcss": "^4.1.0",
+                  "postcss": "^8.5.0"
+              }
+          }, indent=2))
+
+          # tsconfig.json
+          write('tsconfig.json', json.dumps({
+              "compilerOptions": {
+                  "target": "ES2017",
+                  "lib": ["dom", "dom.iterable", "esnext"],
+                  "allowJs": True,
+                  "skipLibCheck": True,
+                  "strict": True,
+                  "noEmit": True,
+                  "esModuleInterop": True,
+                  "module": "esnext",
+                  "moduleResolution": "bundler",
+                  "resolveJsonModule": True,
+                  "isolatedModules": True,
+                  "jsx": "preserve",
+                  "incremental": True,
+                  "plugins": [{"name": "next"}],
+                  "paths": {"@/*": ["./src/*"]}
+              },
+              "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+              "exclude": ["node_modules"]
+          }, indent=2))
+
+          # next.config.ts
+          write('next.config.ts', """import type { NextConfig } from "next";
           const nextConfig: NextConfig = {
             images: { remotePatterns: [{ protocol: "https", hostname: "**" }] }
           };
           export default nextConfig;
-          HEREDOC
+          """)
 
-      - name: Write postcss.config.mjs
-        run: |
-          cat > postcss.config.mjs << 'HEREDOC'
-          const config = { plugins: { "@tailwindcss/postcss": {} } };
-          export default config;
-          HEREDOC
+          # postcss.config.mjs
+          write('postcss.config.mjs', 'const config = { plugins: { "@tailwindcss/postcss": {} } };
+export default config;
+')
 
-      - name: Write .env.example
-        run: |
-          cat > .env.example << 'HEREDOC'
-          # 0x Swap API v2 - get at https://0x.org/docs
+          # .env.example
+          write('.env.example', """# 0x Swap API v2 key - get at https://0x.org/docs
           ZEROX_API_KEY=your_0x_api_key_here
 
           # Alchemy API key - get at https://alchemy.com
           NEXT_PUBLIC_ALCHEMY_KEY=your_alchemy_key_here
 
-          # Chain ID (Base mainnet = 8453)
-          NEXT_PUBLIC_CHAIN_ID=8453
-
-          # Fee recipient address (receives 3% integrator fee)
+          # Fee recipient address (gets 3% integrator fee from every swap)
           NEXT_PUBLIC_FEE_RECIPIENT=0x0000000000000000000000000000000000000000
 
-          # WalletConnect Project ID (optional) - get at https://cloud.walletconnect.com
-          NEXT_PUBLIC_WC_PROJECT_ID=your_walletconnect_project_id
-          HEREDOC
+          # Your app URL (for Farcaster frame metadata)
+          NEXT_PUBLIC_APP_URL=http://localhost:3000
+          """)
 
-      - name: Write src/types/index.ts
-        run: |
-          cat > src/types/index.ts << 'HEREDOC'
-          export interface Token {
+          # .gitignore
+          write('.gitignore', """# Dependencies
+          node_modules/
+          .pnp
+          .pnp.js
+
+          # Build outputs
+          .next/
+          out/
+
+          # Env files
+          .env
+          .env.local
+          .env.development.local
+          .env.test.local
+          .env.production.local
+
+          # Misc
+          .DS_Store
+          *.pem
+          npm-debug.log*
+          yarn-debug.log*
+          yarn-error.log*
+          .turbo
+          """)
+
+          # src/types/index.ts
+          write('src/types/index.ts', """export interface Token {
             address: string;
             balance: number;
             chainId: number;
@@ -133,13 +172,7 @@ jobs:
               fills: Array<{ from: string; to: string; source: string; proportionBps: string }>;
               tokens: Array<{ address: string; symbol: string }>;
             };
-            transaction: {
-              to: string;
-              data: string;
-              gas: string;
-              gasPrice: string;
-              value: string;
-            };
+            transaction: { to: string; data: string; gas: string; gasPrice: string; value: string };
           }
 
           export interface WalletData {
@@ -160,23 +193,21 @@ jobs:
             decimals: number;
             logo: string;
           }
-          HEREDOC
+          """)
 
-      - name: Write src/lib/constants.ts
-        run: |
-          cat > src/lib/constants.ts << 'HEREDOC'
-          import { base } from "wagmi/chains";
+          # src/lib/constants.ts
+          write('src/lib/constants.ts', """import { base } from "wagmi/chains";
 
-          export const CHAIN_ID = 8453; // Base mainnet
+          export const CHAIN_ID = 8453;
           export const CHAIN = base;
           export const APP_NAME = "Kondo Clone";
           export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
           export const ALLOWANCE_HOLDER = "0x0000000000001ff3684f28c67538d4d072c22734";
           export const DEFAULT_SELECT_COUNT = 20;
-          export const FEE_BPS = 300; // 3% integrator fee
+          export const FEE_BPS = 300;
           export const FEE_RECIPIENT = process.env.NEXT_PUBLIC_FEE_RECIPIENT || "0x0000000000000000000000000000000000000000";
 
-          export const DEFAULT_SWAP_TARGETS: Array<{address: string; symbol: string; name: string; decimals: number; logo: string}> = [
+          export const DEFAULT_SWAP_TARGETS = [
             {
               address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
               symbol: "USDC",
@@ -205,24 +236,31 @@ jobs:
               decimals: 8,
               logo: "https://token-registry.s3.amazonaws.com/icons/tokens/base/128/0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf.png",
             },
-          ];
+          ] as const;
+
+          export type SwapTarget = (typeof DEFAULT_SWAP_TARGETS)[number];
 
           export const ERC20_ABI = [
-            { name: "approve", type: "function", stateMutability: "nonpayable", inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }] },
-            { name: "allowance", type: "function", stateMutability: "view", inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }], outputs: [{ name: "", type: "uint256" }] },
-            { name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ name: "", type: "uint256" }] },
-            { name: "transfer", type: "function", stateMutability: "nonpayable", inputs: [{ name: "recipient", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }] },
+            {
+              name: "approve", type: "function", stateMutability: "nonpayable",
+              inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }],
+              outputs: [{ name: "", type: "bool" }],
+            },
+            {
+              name: "allowance", type: "function", stateMutability: "view",
+              inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }],
+              outputs: [{ name: "", type: "uint256" }],
+            },
+            {
+              name: "balanceOf", type: "function", stateMutability: "view",
+              inputs: [{ name: "account", type: "address" }],
+              outputs: [{ name: "", type: "uint256" }],
+            },
           ] as const;
+          """)
 
-          export const ZORA_CURRENCY_ABI = [
-            { name: "currency", type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "address" }] },
-          ] as const;
-          HEREDOC
-
-      - name: Write src/lib/wagmi.ts
-        run: |
-          cat > src/lib/wagmi.ts << 'HEREDOC'
-          import { createConfig, http } from "wagmi";
+          # src/lib/wagmi.ts
+          write('src/lib/wagmi.ts', """import { createConfig, http } from "wagmi";
           import { base, mainnet } from "wagmi/chains";
           import { coinbaseWallet, injected } from "wagmi/connectors";
 
@@ -259,12 +297,10 @@ jobs:
               config: typeof wagmiConfig;
             }
           }
-          HEREDOC
+          """)
 
-      - name: Write src/lib/providers.tsx
-        run: |
-          cat > src/lib/providers.tsx << 'HEREDOC'
-          "use client";
+          # src/lib/providers.tsx
+          write('src/lib/providers.tsx', '''"use client";
           import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
           import { WagmiProvider } from "wagmi";
           import { wagmiConfig } from "./wagmi";
@@ -280,29 +316,46 @@ jobs:
               </WagmiProvider>
             );
           }
-          HEREDOC
+          ''')
 
-      - name: Write src/app/layout.tsx
-        run: |
-          cat > src/app/layout.tsx << 'HEREDOC'
+          # src/app/globals.css
+          write('src/app/globals.css', """@import "tailwindcss";
+
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+
+          body {
+            background: #000000;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            max-width: 480px;
+            margin: 0 auto;
+            overflow-x: hidden;
+          }
+
+          ::-webkit-scrollbar { width: 0px; }
+          """)
+
+          # src/app/layout.tsx
+          write('src/app/layout.tsx', '''"use server";
           import type { Metadata } from "next";
           import "./globals.css";
           import { Providers } from "@/lib/providers";
 
           export const metadata: Metadata = {
             title: "Kondo Clone",
-            description: "Batch swap tokens on Base",
+            description: "Batch swap all your tokens in one click on Base",
             other: {
               "fc:frame": JSON.stringify({
                 version: "next",
-                imageUrl: "/og.png",
+                imageUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/og.png`,
                 button: {
-                  title: "Launch App",
+                  title: "Batch Swap on Base",
                   action: {
                     type: "launch_frame",
                     name: "Kondo Clone",
                     url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-                    splashImageUrl: "/icon.png",
+                    splashImageUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/icon.png`,
                     splashBackgroundColor: "#5C36D6",
                   },
                 },
@@ -319,219 +372,442 @@ jobs:
               </html>
             );
           }
-          HEREDOC
+          ''')
 
-      - name: Write src/app/globals.css
-        run: |
-          cat > src/app/globals.css << 'HEREDOC'
-          @import "tailwindcss";
+          # src/app/page.tsx
+          write('src/app/page.tsx', '''"use client";
+          import { useAccount } from "wagmi";
+          import { SwapInterface } from "@/components/SwapInterface";
+          import { ConnectWallet } from "@/components/ConnectWallet";
+          import { useEffect, useState } from "react";
 
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { background: #000; color: #fff; font-family: system-ui, sans-serif; min-height: 100vh; max-width: 480px; margin: 0 auto; }
-          HEREDOC
-
-      - name: Write src/app/api/web/wallet/route.ts
-        run: |
-          cat > src/app/api/web/wallet/route.ts << 'HEREDOC'
-          import { NextRequest, NextResponse } from "next/server";
-
-          export async function GET(req: NextRequest) {
-            const address = req.nextUrl.searchParams.get("address");
-            if (!address) return NextResponse.json({ error: "address required" }, { status: 400 });
-
-            const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_KEY;
-            if (!alchemyKey) {
-              return NextResponse.json({
-                tokens: [], filteredTokens: [], totalCount: 0,
-                success: false, swappedAmount: 0, streak: 0, tx: [], oldSum: 0,
-                error: "Missing NEXT_PUBLIC_ALCHEMY_KEY environment variable",
-              });
-            }
-
-            try {
-              const response = await fetch(
-                `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    jsonrpc: "2.0", id: 1,
-                    method: "alchemy_getTokenBalances",
-                    params: [address, "DEFAULT_TOKENS"],
-                  }),
-                }
-              );
-              const data = await response.json();
-              const rawBalances = data.result?.tokenBalances || [];
-
-              const tokensWithMeta = await Promise.allSettled(
-                rawBalances
-                  .filter((t: { tokenBalance: string }) => t.tokenBalance !== "0x0000000000000000000000000000000000000000000000000000000000000000")
-                  .slice(0, 50)
-                  .map(async (token: { contractAddress: string; tokenBalance: string }) => {
-                    const metaResp = await fetch(
-                      `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}`,
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          jsonrpc: "2.0", id: 1,
-                          method: "alchemy_getTokenMetadata",
-                          params: [token.contractAddress],
-                        }),
-                      }
-                    );
-                    const metaData = await metaResp.json();
-                    const meta = metaData.result;
-                    const decimals = meta?.decimals || 18;
-                    const balance = parseInt(token.tokenBalance, 16) / Math.pow(10, decimals);
-                    return {
-                      address: token.contractAddress,
-                      balance,
-                      chainId: 8453,
-                      chainName: "Base",
-                      decimals,
-                      logo: meta?.logo || null,
-                      symbol: meta?.symbol || "???",
-                      name: meta?.name || "Unknown",
-                      worth: "0",
-                      safe: balance > 0.001,
-                    };
-                  })
-              );
-
-              const tokens = tokensWithMeta
-                .filter((r) => r.status === "fulfilled")
-                .map((r) => (r as PromiseFulfilledResult<unknown>).value);
-
-              return NextResponse.json({
-                tokens, filteredTokens: [], totalCount: tokens.length,
-                success: true, swappedAmount: 0, streak: 0, tx: [], oldSum: 0,
-              });
-            } catch (error) {
-              console.error("Token fetch error:", error);
-              return NextResponse.json({
-                tokens: [], filteredTokens: [], totalCount: 0,
-                success: false, swappedAmount: 0, streak: 0, tx: [], oldSum: 0,
-              });
-            }
+          export default function Home() {
+            const { address, isConnected } = useAccount();
+            const [mounted, setMounted] = useState(false);
+            useEffect(() => { setMounted(true); }, []);
+            if (!mounted) return null;
+            return (
+              <main style={{ minHeight: "100vh", background: "#000" }}>
+                {isConnected && address ? (
+                  <SwapInterface address={address} />
+                ) : (
+                  <ConnectWallet />
+                )}
+              </main>
+            );
           }
-          HEREDOC
+          ''')
 
-      - name: Write src/app/api/web/wallet/[address]/route.ts
-        run: |
-          mkdir -p src/app/api/web/wallet/\[address\]
-          cat > "src/app/api/web/wallet/[address]/route.ts" << 'HEREDOC'
-          import { NextRequest, NextResponse } from "next/server";
+          # src/components/ConnectWallet.tsx
+          write('src/components/ConnectWallet.tsx', '''"use client";
+          import { useConnect } from "wagmi";
+
+          export function ConnectWallet() {
+            const { connect, connectors, isPending } = useConnect();
+            return (
+              <div style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                justifyContent: "center", height: "100vh", gap: "16px", padding: "24px"
+              }}>
+                <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                  <h1 style={{ fontSize: "28px", fontWeight: "bold", color: "#fff", marginBottom: "8px" }}>
+                    Kondo Clone
+                  </h1>
+                  <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "16px" }}>
+                    Batch swap all your tokens in one click
+                  </p>
+                </div>
+                {connectors.map((connector) => (
+                  <button
+                    key={connector.uid}
+                    onClick={() => connect({ connector })}
+                    disabled={isPending}
+                    style={{
+                      width: "100%", padding: "16px 24px", borderRadius: "16px",
+                      background: connector.name === "Coinbase Wallet" ? "#5C36D6" : "rgba(255,255,255,0.08)",
+                      color: "#fff", fontSize: "16px", fontWeight: "600",
+                      border: "none", cursor: "pointer", transition: "opacity 0.2s",
+                      opacity: isPending ? 0.6 : 1,
+                    }}
+                  >
+                    {connector.name === "Coinbase Wallet" ? "Base Account / Smart Wallet" : connector.name}
+                  </button>
+                ))}
+              </div>
+            );
+          }
+          ''')
+
+          # src/components/TokenList.tsx
+          write('src/components/TokenList.tsx', '''"use client";
+          import type { Token } from "@/types";
+
+          interface TokenListProps {
+            tokens: Token[];
+            selectedTokens: Set<string>;
+            onToggle: (address: string) => void;
+            isLoading: boolean;
+          }
+
+          export function TokenList({ tokens, selectedTokens, onToggle, isLoading }: TokenListProps) {
+            if (isLoading) {
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "16px" }}>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} style={{
+                      height: "60px", borderRadius: "12px",
+                      background: "rgba(255,255,255,0.05)", animation: "pulse 1.5s infinite"
+                    }} />
+                  ))}
+                </div>
+              );
+            }
+
+            if (tokens.length === 0) {
+              return (
+                <div style={{
+                  display: "flex", flexDirection: "column", alignItems: "center",
+                  justifyContent: "center", height: "200px", color: "rgba(255,255,255,0.4)",
+                  gap: "8px"
+                }}>
+                  <span style={{ fontSize: "32px" }}>🪣</span>
+                  <p>No tokens found</p>
+                  <p style={{ fontSize: "14px" }}>Connect your wallet to see your tokens</p>
+                </div>
+              );
+            }
+
+            const sorted = [...tokens].sort((a, b) => parseFloat(b.worth) - parseFloat(a.worth));
+
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px", padding: "8px" }}>
+                {sorted.map((token) => {
+                  const isSelected = selectedTokens.has(token.address);
+                  const worth = parseFloat(token.worth);
+                  return (
+                    <button
+                      key={token.address}
+                      onClick={() => onToggle(token.address)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "12px",
+                        padding: "12px", borderRadius: "12px", border: "none",
+                        background: isSelected ? "rgba(92,54,214,0.2)" : "transparent",
+                        cursor: "pointer", width: "100%", textAlign: "left",
+                        transition: "background 0.15s",
+                        outline: isSelected ? "1px solid rgba(92,54,214,0.5)" : "none",
+                      }}
+                    >
+                      {/* Token logo */}
+                      <div style={{
+                        width: "40px", height: "40px", borderRadius: "50%",
+                        overflow: "hidden", flexShrink: 0, position: "relative",
+                        background: "rgba(255,255,255,0.1)"
+                      }}>
+                        {token.logo && (
+                          <img src={token.logo} alt={token.symbol}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                          />
+                        )}
+                      </div>
+
+                      {/* Token info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ color: "#fff", fontWeight: "600", fontSize: "15px" }}>
+                            {token.symbol}
+                          </span>
+                          <span style={{ color: "#fff", fontWeight: "600", fontSize: "15px" }}>
+                            {worth > 0.01 ? `$${worth.toFixed(2)}` : "<$0.01"}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px" }}>
+                            {token.name}
+                          </span>
+                          <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px" }}>
+                            {token.balance.toFixed(4)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Checkbox */}
+                      <div style={{
+                        width: "22px", height: "22px", borderRadius: "6px", flexShrink: 0,
+                        border: isSelected ? "none" : "2px solid rgba(255,255,255,0.3)",
+                        background: isSelected ? "#5C36D6" : "transparent",
+                        display: "flex", alignItems: "center", justifyContent: "center"
+                      }}>
+                        {isSelected && (
+                          <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
+                            <path d="M1 5l3.5 3.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          }
+          ''')
+
+          # src/components/SwapTargetPicker.tsx
+          write('src/components/SwapTargetPicker.tsx', '''"use client";
+          import { useState } from "react";
+          import type { SwapTarget } from "@/types";
+
+          interface SwapTargetPickerProps {
+            selected: SwapTarget;
+            options: readonly SwapTarget[];
+            onSelect: (token: SwapTarget) => void;
+          }
+
+          export function SwapTargetPicker({ selected, options, onSelect }: SwapTargetPickerProps) {
+            const [open, setOpen] = useState(false);
+            return (
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => setOpen(!open)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "8px",
+                    padding: "6px 12px", borderRadius: "20px",
+                    background: "rgba(0,0,0,0.3)", border: "none", cursor: "pointer",
+                    color: "#fff", fontWeight: "700", fontSize: "16px"
+                  }}
+                >
+                  {selected.logo && (
+                    <img src={selected.logo} alt={selected.symbol}
+                      style={{ width: "24px", height: "24px", borderRadius: "50%" }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  )}
+                  {selected.symbol}
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1l5 5 5-5" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+                {open && (
+                  <>
+                    <div
+                      onClick={() => setOpen(false)}
+                      style={{ position: "fixed", inset: 0, zIndex: 10 }}
+                    />
+                    <div style={{
+                      position: "absolute", top: "calc(100% + 8px)", right: 0,
+                      background: "#1a1a1a", borderRadius: "16px", padding: "8px",
+                      minWidth: "200px", zIndex: 20, boxShadow: "0 8px 32px rgba(0,0,0,0.5)"
+                    }}>
+                      {options.map((token) => (
+                        <button
+                          key={token.address}
+                          onClick={() => { onSelect(token); setOpen(false); }}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "10px",
+                            padding: "10px 12px", width: "100%", border: "none",
+                            background: token.address === selected.address ? "rgba(92,54,214,0.2)" : "transparent",
+                            borderRadius: "10px", cursor: "pointer", color: "#fff",
+                            fontSize: "15px", fontWeight: "500"
+                          }}
+                        >
+                          {token.logo && (
+                            <img src={token.logo} alt={token.symbol}
+                              style={{ width: "28px", height: "28px", borderRadius: "50%" }}
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                            />
+                          )}
+                          <span>{token.symbol}</span>
+                          <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px", marginLeft: "auto" }}>
+                            {token.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          }
+          ''')
+
+          # src/components/SettingsPanel.tsx
+          write('src/components/SettingsPanel.tsx', '''"use client";
+
+          interface SettingsPanelProps {
+            defaultSelectCount: number;
+            onDefaultSelectChange: (n: number) => void;
+            hideZora: boolean;
+            onHideZoraChange: (v: boolean) => void;
+            hideClanker: boolean;
+            onHideClankerChange: (v: boolean) => void;
+          }
+
+          export function SettingsPanel({
+            defaultSelectCount, onDefaultSelectChange,
+            hideZora, onHideZoraChange,
+            hideClanker, onHideClankerChange
+          }: SettingsPanelProps) {
+            const selectOptions = [5, 10, 15, 20];
+            return (
+              <div style={{
+                padding: "16px", background: "rgba(255,255,255,0.05)",
+                borderBottom: "1px solid rgba(255,255,255,0.08)"
+              }}>
+                <div style={{ marginBottom: "12px" }}>
+                  <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "13px", marginBottom: "8px" }}>
+                    Default select count
+                  </p>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    {selectOptions.map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => onDefaultSelectChange(n)}
+                        style={{
+                          padding: "6px 14px", borderRadius: "8px", border: "none",
+                          background: defaultSelectCount === n ? "#5C36D6" : "rgba(255,255,255,0.1)",
+                          color: "#fff", cursor: "pointer", fontSize: "14px"
+                        }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                    <input type="checkbox" checked={hideZora} onChange={e => onHideZoraChange(e.target.checked)}
+                      style={{ accentColor: "#5C36D6", width: "18px", height: "18px" }} />
+                    <span style={{ color: "#fff", fontSize: "14px" }}>Hide Zora tokens</span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                    <input type="checkbox" checked={hideClanker} onChange={e => onHideClankerChange(e.target.checked)}
+                      style={{ accentColor: "#5C36D6", width: "18px", height: "18px" }} />
+                    <span style={{ color: "#fff", fontSize: "14px" }}>Hide Clanker tokens</span>
+                  </label>
+                </div>
+              </div>
+            );
+          }
+          ''')
+
+          # src/app/api/web/wallet/[address]/route.ts
+          os.makedirs('src/app/api/web/wallet/[address]', exist_ok=True)
+          write('src/app/api/web/wallet/[address]/route.ts', """import { NextRequest, NextResponse } from "next/server";
+
+          const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || "";
+          const ALCHEMY_URL = `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`;
+
+          interface TokenBalance {
+            contractAddress: string;
+            tokenBalance: string;
+          }
+
+          interface TokenMeta {
+            decimals: number;
+            logo: string | null;
+            symbol: string;
+            name: string;
+          }
 
           export async function GET(
-            req: NextRequest,
+            _req: NextRequest,
             { params }: { params: Promise<{ address: string }> }
           ) {
             const { address } = await params;
-            const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_KEY;
-            if (!alchemyKey) {
+
+            if (!ALCHEMY_KEY) {
               return NextResponse.json({
                 tokens: [], filteredTokens: [], totalCount: 0,
                 success: false, swappedAmount: 0, streak: 0, tx: [], oldSum: 0,
+                error: "Missing NEXT_PUBLIC_ALCHEMY_KEY in environment variables",
               });
             }
 
             try {
-              const response = await fetch(
-                `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    jsonrpc: "2.0", id: 1,
-                    method: "alchemy_getTokenBalances",
-                    params: [address, "DEFAULT_TOKENS"],
-                  }),
-                }
-              );
-              const data = await response.json();
-              const rawBalances = data.result?.tokenBalances || [];
+              // Fetch token balances using Alchemy
+              const balanceRes = await fetch(ALCHEMY_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  jsonrpc: "2.0", id: 1,
+                  method: "alchemy_getTokenBalances",
+                  params: [address, "DEFAULT_TOKENS"],
+                }),
+              });
+              const balanceData = await balanceRes.json();
+              const rawBalances: TokenBalance[] = balanceData.result?.tokenBalances || [];
 
+              // Filter out zero balances and slice
+              const nonZero = rawBalances.filter(
+                (t) => t.tokenBalance !== "0x0000000000000000000000000000000000000000000000000000000000000000"
+              );
+
+              // Fetch metadata for each token
               const tokensWithMeta = await Promise.allSettled(
-                rawBalances
-                  .filter((t: { tokenBalance: string }) =>
-                    t.tokenBalance !== "0x0000000000000000000000000000000000000000000000000000000000000000"
-                  )
-                  .slice(0, 50)
-                  .map(async (token: { contractAddress: string; tokenBalance: string }) => {
-                    const metaResp = await fetch(
-                      `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}`,
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          jsonrpc: "2.0", id: 1,
-                          method: "alchemy_getTokenMetadata",
-                          params: [token.contractAddress],
-                        }),
-                      }
-                    );
-                    const metaData = await metaResp.json();
-                    const meta = metaData.result;
-                    const decimals = meta?.decimals || 18;
-                    const balance = parseInt(token.tokenBalance, 16) / Math.pow(10, decimals);
-                    return {
-                      address: token.contractAddress,
-                      balance,
-                      chainId: 8453,
-                      chainName: "Base",
-                      decimals,
-                      logo: meta?.logo || null,
-                      symbol: meta?.symbol || "???",
-                      name: meta?.name || "Unknown",
-                      worth: "0",
-                      safe: balance > 0.001,
-                    };
-                  })
+                nonZero.slice(0, 60).map(async (token) => {
+                  const metaRes = await fetch(ALCHEMY_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      jsonrpc: "2.0", id: 1,
+                      method: "alchemy_getTokenMetadata",
+                      params: [token.contractAddress],
+                    }),
+                  });
+                  const metaData = await metaRes.json();
+                  const meta: TokenMeta = metaData.result;
+                  const decimals = meta?.decimals || 18;
+                  const rawBalance = parseInt(token.tokenBalance, 16);
+                  const balance = rawBalance / Math.pow(10, decimals);
+
+                  return {
+                    address: token.contractAddress,
+                    balance,
+                    chainId: 8453,
+                    chainName: "Base",
+                    decimals,
+                    logo: meta?.logo || null,
+                    symbol: meta?.symbol || "???",
+                    name: meta?.name || "Unknown Token",
+                    worth: "0",
+                    safe: balance > 0,
+                  };
+                })
               );
 
-              const tokens = tokensWithMeta
+              const allTokens = tokensWithMeta
                 .filter((r) => r.status === "fulfilled")
                 .map((r) => (r as PromiseFulfilledResult<unknown>).value);
 
-              const filteredTokens = (tokens as Array<{ address: string; symbol: string }>).filter(
-                (t) =>
-                  t.address === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" ||
-                  t.symbol === "ETH"
+              // Separate ETH from ERC-20 tokens
+              const ethAddress = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+              const filteredTokens = (allTokens as Array<{ address: string }>).filter(
+                (t) => t.address === ethAddress
+              );
+              const tokens = (allTokens as Array<{ address: string }>).filter(
+                (t) => t.address !== ethAddress
               );
 
               return NextResponse.json({
-                tokens: (tokens as Array<{ address: string; symbol: string }>).filter(
-                  (t) => t.address !== "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                ),
-                filteredTokens,
-                totalCount: tokens.length,
-                success: true,
-                swappedAmount: 0,
-                streak: 0,
-                tx: [],
-                oldSum: 0,
+                tokens, filteredTokens, totalCount: allTokens.length,
+                success: true, swappedAmount: 0, streak: 0, tx: [], oldSum: 0,
               });
             } catch (error) {
-              console.error("Wallet fetch error:", error);
+              console.error("Wallet data fetch error:", error);
               return NextResponse.json({
                 tokens: [], filteredTokens: [], totalCount: 0,
                 success: false, swappedAmount: 0, streak: 0, tx: [], oldSum: 0,
               });
             }
           }
-          HEREDOC
+          """)
 
-      - name: Write src/app/api/web/wallet/quote/route.ts
-        run: |
-          mkdir -p src/app/api/web/wallet/quote
-          cat > src/app/api/web/wallet/quote/route.ts << 'HEREDOC'
-          import { NextRequest, NextResponse } from "next/server";
+          # src/app/api/web/wallet/quote/route.ts
+          os.makedirs('src/app/api/web/wallet/quote', exist_ok=True)
+          write('src/app/api/web/wallet/quote/route.ts', """import { NextRequest, NextResponse } from "next/server";
 
           const ZEROX_API_KEY = process.env.ZEROX_API_KEY || "";
           const FEE_RECIPIENT = process.env.NEXT_PUBLIC_FEE_RECIPIENT || "";
-          const ZEROX_BASE_URL = "https://api.0x.org/swap/permit2/quote";
 
           export async function GET(req: NextRequest) {
             const { searchParams } = req.nextUrl;
@@ -542,49 +818,49 @@ jobs:
             const swapFeeToken = searchParams.get("swapFeeToken") || buyToken;
 
             if (!buyToken || !sellToken || !taker) {
-              return NextResponse.json(
-                {
-                  name: "INPUT_INVALID",
-                  message: "The input is invalid",
-                  data: {
-                    details: [
-                      !buyToken && { field: "buyToken", reason: "Required" },
-                      !sellToken && { field: "sellToken", reason: "Required" },
-                      !taker && { field: "taker", reason: "Required" },
-                    ].filter(Boolean),
-                  },
+              return NextResponse.json({
+                name: "INPUT_INVALID",
+                message: "The input is invalid",
+                data: {
+                  details: [
+                    !buyToken && { field: "buyToken", reason: "Required" },
+                    !sellToken && { field: "sellToken", reason: "Required" },
+                    !taker && { field: "taker", reason: "Required" },
+                  ].filter(Boolean),
                 },
-                { status: 200 }
-              );
+              });
             }
 
             if (!ZEROX_API_KEY) {
               return NextResponse.json(
-                { error: "Missing ZEROX_API_KEY. Add it to your .env file." },
+                { error: "Missing ZEROX_API_KEY environment variable" },
                 { status: 500 }
               );
             }
 
             const params = new URLSearchParams({
               chainId: "8453",
-              buyToken,
-              sellToken,
-              taker,
+              buyToken: buyToken!,
+              sellToken: sellToken!,
+              taker: taker!,
               ...(sellAmount && { sellAmount }),
               ...(swapFeeToken && FEE_RECIPIENT && {
                 swapFeeRecipient: FEE_RECIPIENT,
                 swapFeeBps: "300",
-                swapFeeToken,
+                swapFeeToken: swapFeeToken,
               }),
             });
 
             try {
-              const response = await fetch(`${ZEROX_BASE_URL}?${params}`, {
-                headers: {
-                  "0x-api-key": ZEROX_API_KEY,
-                  "0x-version": "v2",
-                },
-              });
+              const response = await fetch(
+                `https://api.0x.org/swap/permit2/quote?${params}`,
+                {
+                  headers: {
+                    "0x-api-key": ZEROX_API_KEY,
+                    "0x-version": "v2",
+                  },
+                }
+              );
               const data = await response.json();
               return NextResponse.json(data, { status: response.status });
             } catch (error) {
@@ -592,12 +868,16 @@ jobs:
               return NextResponse.json({ error: "Failed to fetch quote" }, { status: 500 });
             }
           }
-          HEREDOC
+          """)
 
-      - name: Commit and push
+          # src/components/SwapInterface.tsx (already created via web editor, skip)
+
+          print("\n✅ All files created successfully!")
+          PYEOF
+
+      - name: Commit and push all files
         run: |
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add -A
-          git diff --staged --quiet || git commit -m "feat: scaffold backend API routes and config"
-          git push
+          git diff --staged --quiet && echo "No changes to commit" || (git commit -m "feat: add all project files via scaffold workflow" && git push)
